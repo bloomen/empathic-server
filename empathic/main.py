@@ -3,6 +3,7 @@ from flask_api import status
 from werkzeug import abort
 import numpy as np
 import json
+import uuid
 
 app = Flask(__name__)
 
@@ -15,6 +16,8 @@ class State:
 
 states = {}  # session -> state
 
+sessions = []
+
 
 def get_coordinate(value):
     try:
@@ -26,12 +29,36 @@ def get_coordinate(value):
     return value
 
 
+def check_session(s):
+    if sessions.count(s) == 0:
+        abort(status.HTTP_400_BAD_REQUEST)
+
+
+# TODO: Implement real login
+@app.route('/login', methods=["POST"])
+def login():
+    s = str(uuid.uuid1())
+    sessions.append(s)
+    return s, status.HTTP_200_OK
+
+
+# TODO: Implement real logout
+@app.route('/logout', methods=["POST"])
+def logout():
+    s = request.form.get("s")
+    if s is not None:
+        sessions.remove(s)
+    return '', status.HTTP_200_OK
+
+
 @app.route('/press', methods=["POST"])
 def action():
     s = request.form.get("s")
+    check_session(s)
+
     x = request.form.get("x")
     y = request.form.get("y")
-    if x is None or y is None or s is None:
+    if x is None or y is None:
         abort(status.HTTP_400_BAD_REQUEST)
 
     x = get_coordinate(x)
@@ -55,8 +82,7 @@ def action():
 @app.route('/release', methods=["POST"])
 def release():
     s = request.form.get("s")
-    if s is None:
-        abort(status.HTTP_400_BAD_REQUEST)
+    check_session(s)
 
     st = states.get(s)
 
@@ -70,8 +96,7 @@ def release():
 @app.route('/heat', methods=["POST"])
 def heat():
     s = request.form.get("s")
-    if s is None:
-        abort(status.HTTP_400_BAD_REQUEST)
+    check_session(s)
 
     heatsum = np.sum(np.sum(heatmap))
     if heatsum > 0:
