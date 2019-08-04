@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
 from flask import Flask, request
 from flask_api import status
 from werkzeug import abort
 import numpy as np
 import json
 import uuid
+import sys
 
 app = Flask(__name__)
 
@@ -115,8 +117,14 @@ def heat():
     return json.dumps(data)
 
 
+@app.route('/', methods=["GET"])
+def root():
+    return "This is Empathic.", status.HTTP_200_OK
+
+
 def main():
-    app.run("localhost", 7878, debug=True)
+    debug = len(sys.argv) > 1 and sys.argv[1] == "debug"
+    app.run(debug=debug)
 
 
 if __name__ == "__main__":
