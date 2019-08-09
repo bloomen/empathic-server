@@ -4,9 +4,10 @@ import json
 import numpy as np
 import pylab as plt
 
+api = 'http://192.168.1.7/empathic'
 
 def main():
-    r = requests.post('http://localhost:7878/heat', data=dict(s=42))
+    r = requests.post(api + '/heat')
     data = json.loads(r.text)
 
     heatmap = np.array([[0] * 10] * 16, dtype=float)
