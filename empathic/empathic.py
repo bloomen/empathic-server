@@ -84,7 +84,7 @@ def get_coordinate(value):
     return value
 
 
-@app.route('/press', methods=["POST"])
+@app.route('/api/press', methods=["POST"])
 def press():
     s = request.form.get("s")
     x = request.form.get("x")
@@ -111,7 +111,7 @@ def press():
     return '', status.HTTP_200_OK
 
 
-@app.route('/release', methods=["POST"])
+@app.route('/api/release', methods=["POST"])
 def release():
     s = request.form.get("s")
     if s is None:
@@ -127,7 +127,7 @@ def release():
     return '', status.HTTP_200_OK
 
 
-@app.route('/heat', methods=["POST"])
+@app.route('/api/heat', methods=["POST"])
 def heat():
     with lock() as data:
         heatmap = np.copy(data.heatmap)
