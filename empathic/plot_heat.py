@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pylab as plt
 
-api = 'http://192.168.1.7/empathic'
+api = 'http://192.168.1.7/api'
 
 def main():
     r = requests.post(api + '/heat')
@@ -20,7 +20,7 @@ def main():
         ix = int(heatmap.shape[0] * x)
         iy = int(heatmap.shape[1] * y)
         heatmap[ix, iy] = w
-            
+
     plt.imshow(heatmap, cmap='hot')
     plt.show()
 
