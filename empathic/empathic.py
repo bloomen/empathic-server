@@ -161,6 +161,8 @@ def add_header(r):
     r.headers["Cache-Control"] = "max-age=0, no-cache, no-store, must-revalidate"
     r.headers["Pragma"] = "no-cache"
     r.headers["Expires"] = "0"
+    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Access-Control-Allow-Headers"] = "Origin, Content-Type, Accept"
     return r
 
 
