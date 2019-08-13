@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request
+from flask import Flask, request, render_template
 from flask_api import status
 from werkzeug import abort
 import numpy as np
@@ -153,7 +153,7 @@ def heat():
 
 @app.route('/', methods=["GET"])
 def root():
-    return "This is Empathic.", status.HTTP_200_OK
+    return render_template('index.html'), status.HTTP_200_OK
 
 
 @app.after_request
