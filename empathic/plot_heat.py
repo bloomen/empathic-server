@@ -17,8 +17,8 @@ def main():
         x = float(row[0])
         y = float(row[1])
         w = float(row[2])
-        ix = int(heatmap.shape[0] * x)
-        iy = int(heatmap.shape[1] * y)
+        ix = round(heatmap.shape[0] * x)
+        iy = round(heatmap.shape[1] * y)
         heatmap[ix, iy] = w
 
     plt.imshow(heatmap, cmap='hot')

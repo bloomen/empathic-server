@@ -26,7 +26,7 @@ def acquire_lock():
         except FileExistsError:
             pass
 
-        
+
 def release_lock():
     try:
         os.unlink(lockfile)
@@ -44,7 +44,7 @@ def lock(write=False):
         if write:
             write_data(data)
         release_lock()
-        
+
 
 class Data:
     def __init__(self):
@@ -72,7 +72,7 @@ def write_data(data):
             pickle.dump(data, f)
     except:
         pass
-    
+
 
 def get_coordinate(value):
     try:
