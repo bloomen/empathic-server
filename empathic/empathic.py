@@ -10,18 +10,28 @@ import tempfile
 import os
 from contextlib import contextmanager
 import pickle
+import logging
+from collections import namedtuple
+
+tmpdir = tempfile.gettempdir()
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(process)d - %(funcName)s - %(message)s',
+                    handlers=[logging.FileHandler(os.path.join(tmpdir, "empathic.log")),
+                              logging.StreamHandler()])
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-tmpdir = tempfile.gettempdir()
 lockfile = os.path.join(tmpdir, 'empathic.lock')
 datafile = os.path.join(tmpdir, 'empathic.dat')
-
 
 def acquire_lock():
     while True:
         try:
             with open(lockfile, "x") as _:
+                logger.debug("acquired lock")
                 break
         except FileExistsError:
             pass
@@ -32,6 +42,8 @@ def release_lock():
         os.unlink(lockfile)
     except:
         pass
+    finally:
+        logger.debug("released lock")
 
 
 @contextmanager
@@ -52,17 +64,17 @@ class Data:
         self.states = {}  # session -> state
 
 
-class State:
-    def __init__(self, ix, iy):
-        self.ix = ix
-        self.iy = iy
+State = namedtuple('State', 'ix iy')
 
 
 def read_data():
+    if not os.path.exists(datafile):
+        return Data()
     try:
         with open(datafile, 'rb') as f:
             return pickle.load(f)
-    except:
+    except Exception as e:
+        logger.exception(e.message)
         return Data()
 
 
@@ -70,8 +82,8 @@ def write_data(data):
     try:
         with open(datafile, 'wb') as f:
             pickle.dump(data, f)
-    except:
-        pass
+    except Exception as e:
+        logger.exception(e.message)
 
 
 def get_coordinate(value):
@@ -86,6 +98,7 @@ def get_coordinate(value):
 
 @app.route('/api/press', methods=["POST"])
 def press():
+    logger.debug("request args: %s", request.form)
     s = request.form.get("s")
     x = request.form.get("x")
     y = request.form.get("y")
@@ -101,6 +114,8 @@ def press():
 
         st = data.states.get(s)
 
+        logger.debug("ix = %d, iy = %d, state = %s", ix, iy, st)
+
         if st is not None:
             data.heatmap[st.ix, st.iy] -= 1
 
@@ -113,12 +128,15 @@ def press():
 
 @app.route('/api/release', methods=["POST"])
 def release():
+    logger.debug("request args: %s", request.form)
     s = request.form.get("s")
     if s is None:
         abort(status.HTTP_400_BAD_REQUEST)
 
     with lock(True) as data:
         st = data.states.get(s)
+
+        logger.debug("state = %s", st)
 
         if st is not None:
             data.heatmap[st.ix, st.iy] -= 1
@@ -129,10 +147,12 @@ def release():
 
 @app.route('/api/heat', methods=["POST"])
 def heat():
+    logger.debug("request args: %s", request.form)
     with lock() as data:
         heatmap = np.copy(data.heatmap)
 
     heatsum = np.sum(np.sum(heatmap))
+    logger.debug("heatsum = %s", heatsum)
     if heatsum > 0:
         heatnorm = heatmap / heatsum
     else:
@@ -148,6 +168,7 @@ def heat():
                                         round(value, 2))
                 rows.append(row)
 
+    logger.debug("rows = %s", rows)
     return json.dumps(rows), status.HTTP_200_OK
 
 
