@@ -129,7 +129,7 @@ def press():
         
         data.states[s] = State(ix, iy)
 
-    return '', status.HTTP_200_OK
+    return _get_heat(), status.HTTP_200_OK
 
 
 @app.route('/api/release', methods=["POST"])
@@ -148,16 +148,13 @@ def release():
             data.heatmap[index(st.ix, st.iy)] -= 1
             del data.states[s]
 
-    return '', status.HTTP_200_OK
+    return _get_heat(), status.HTTP_200_OK
 
 
-@app.route('/api/heat', methods=["POST"])
-def heat():
-    logger.debug("request args: %s", request.form)
+def _get_heat():
     with lock() as data:
         heatmap = np.copy(data.heatmap)
 
-    logger.debug(heatmap.shape)
     heatsum = heatmap.sum()
     logger.debug("heatsum = %s", heatsum)
     if heatsum > 0:
@@ -176,7 +173,13 @@ def heat():
                 rows.append(row)
 
     logger.debug("rows = %s", rows)
-    return json.dumps(rows), status.HTTP_200_OK
+    return json.dumps(rows)
+
+
+@app.route('/api/heat', methods=["POST"])
+def heat():
+    logger.debug("request args: %s", request.form)
+    return _get_heat(), status.HTTP_200_OK
 
 
 @app.route('/', methods=["GET"])
