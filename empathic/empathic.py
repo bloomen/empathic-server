@@ -15,6 +15,9 @@ from collections import namedtuple
 
 tmpdir = tempfile.gettempdir()
 
+lockfile = os.path.join(tmpdir, 'empathic.lock')
+datafile = os.path.join(tmpdir, 'empathic.dat')
+
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(process)d - %(funcName)s - %(message)s',
                     handlers=[logging.FileHandler(os.path.join(tmpdir, "empathic.log")),
@@ -24,8 +27,6 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-lockfile = os.path.join(tmpdir, 'empathic.lock')
-datafile = os.path.join(tmpdir, 'empathic.dat')
 
 def acquire_lock():
     while True:
@@ -59,8 +60,9 @@ def lock(write=False):
 
 
 class Data:
+    SIZE = 96
     def __init__(self):
-        self.heatmap = np.array([[0] * 100] * 160, dtype=float)
+        self.heatmap = np.array([0] * (Data.SIZE * Data.SIZE), dtype=float)
         self.states = {}  # session -> state
 
 
@@ -96,6 +98,10 @@ def get_coordinate(value):
     return value
 
 
+def index(ix, iy):
+    return iy * Data.SIZE + ix
+
+
 @app.route('/api/press', methods=["POST"])
 def press():
     logger.debug("request args: %s", request.form)
@@ -109,17 +115,17 @@ def press():
     y = get_coordinate(y)
 
     with lock(True) as data:
-        ix = int(data.heatmap.shape[0] * x)
-        iy = int(data.heatmap.shape[1] * y)
+        ix = int(round(Data.SIZE * x))
+        iy = int(round(Data.SIZE * y))
 
         st = data.states.get(s)
 
         logger.debug("ix = %d, iy = %d, state = %s", ix, iy, st)
 
         if st is not None:
-            data.heatmap[st.ix, st.iy] -= 1
+            data.heatmap[index(st.ix, st.iy)] -= 1
 
-        data.heatmap[ix, iy] += 1
+        data.heatmap[index(ix, iy)] += 1
         
         data.states[s] = State(ix, iy)
 
@@ -139,7 +145,7 @@ def release():
         logger.debug("state = %s", st)
 
         if st is not None:
-            data.heatmap[st.ix, st.iy] -= 1
+            data.heatmap[index(st.ix, st.iy)] -= 1
             del data.states[s]
 
     return '', status.HTTP_200_OK
@@ -151,7 +157,8 @@ def heat():
     with lock() as data:
         heatmap = np.copy(data.heatmap)
 
-    heatsum = np.sum(np.sum(heatmap))
+    logger.debug(heatmap.shape)
+    heatsum = heatmap.sum()
     logger.debug("heatsum = %s", heatsum)
     if heatsum > 0:
         heatnorm = heatmap / heatsum
@@ -159,13 +166,13 @@ def heat():
         heatnorm = heatmap
 
     rows = []
-    for i in range(heatnorm.shape[0]):
-        for j in range(heatnorm.shape[1]):
-            value = heatnorm[i, j]
+    for iy in range(Data.SIZE):
+        for ix in range(Data.SIZE):
+            value = heatnorm[index(ix, iy)]
             if value >= 0.01:
-                row = "{},{},{}".format(round(i / heatnorm.shape[0], 2),
-                                        round(j / heatnorm.shape[1], 2),
-                                        round(value, 2))
+                row = "{},{},{}".format(round(ix / Data.SIZE, 15),
+                                        round(iy / Data.SIZE, 15),
+                                        round(value, 15))
                 rows.append(row)
 
     logger.debug("rows = %s", rows)
