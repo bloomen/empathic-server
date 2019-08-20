@@ -60,7 +60,7 @@ def lock(write=False):
 
 
 class Data:
-    SIZE = 96
+    SIZE = 32
     def __init__(self):
         self.heatmap = np.array([0] * (Data.SIZE * Data.SIZE), dtype=float)
         self.states = {}  # session -> state
