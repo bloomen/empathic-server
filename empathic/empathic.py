@@ -155,18 +155,13 @@ def _get_heat():
     with lock() as data:
         heatmap = np.copy(data.heatmap)
 
-    heatsum = heatmap.sum()
-    logger.debug("heatsum = %s", heatsum)
-    if heatsum > 0:
-        heatnorm = heatmap / heatsum
-    else:
-        heatnorm = heatmap
-
     rows = []
     for iy in range(Data.SIZE):
         for ix in range(Data.SIZE):
-            value = heatnorm[index(ix, iy)]
-            if value >= 0.01:
+            value = heatmap[index(ix, iy)]
+            if value > 0:
+                value /= 10
+                value = np.clip(value, 0, 1)
                 row = "{},{},{}".format(round(ix / Data.SIZE, 15),
                                         round(iy / Data.SIZE, 15),
                                         round(value, 15))
