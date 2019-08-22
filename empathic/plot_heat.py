@@ -10,7 +10,7 @@ def main():
     r = requests.post(api + '/heat')
     data = json.loads(r.text)
 
-    heatmap = np.array([[0] * 10] * 16, dtype=float)
+    heatmap = np.array([[0] * 32] * 32, dtype=float)
 
     for row in data:
         row = row.split(",")
